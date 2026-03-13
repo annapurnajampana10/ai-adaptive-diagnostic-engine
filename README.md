@@ -17,7 +17,7 @@ This project delivers a 1D adaptive diagnostic prototype that selects questions 
 - **AI integration (OpenAI)**: Implemented in `app/services/llm.py`.
   - Evaluates answers and generates AI feedback.
   - If `OPENAI_API_KEY` is missing or quota is exhausted, the system falls back to a deterministic scoring heuristic.
-  - After **10 answered questions**, the system generates a **personalized 3-step study plan**.
+  - After **answered questions**, the system generates a **personalized 3-step study plan**.
 - **Architecture**: Modular FastAPI app with separate `routes/`, `services/`, `schemas/`, and `db/`.
 - **API**: `GET /next-question`, `POST /submit-answer` (plus convenience endpoints `/` and `/health`).
 
@@ -146,8 +146,7 @@ Example:
   "Practice medium-difficulty questions to strengthen understanding",
   "Attempt timed practice tests to improve speed and accuracy"
 ]
-
-
+```
 ## Notes on LLM usage
 
 - Set `OPENAI_API_KEY` in `.env` to enable real LLM feedback.
@@ -159,11 +158,10 @@ This project implements an adaptive diagnostic test engine:
 
 - **MongoDB collections**: `questions`, `user_sessions`
 - **Adaptive algorithm**: start ability at **0.5**, update by **±0.1**, next question difficulty matches ability
-- **LLM integration**: after **10** answers, generates a **personalized 3-step study plan** (OpenAI if configured; otherwise a deterministic fallback plan)
+- **LLM integration**: after **answers**, generates a **personalized 3-step study plan** (OpenAI if configured; otherwise a deterministic fallback plan)
 
 ## Project Structure
 
-```
 adaptive-diagnostic-engine/
   app/
     core/config.py
