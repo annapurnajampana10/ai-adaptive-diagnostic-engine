@@ -2,6 +2,7 @@
 
 Backend: **FastAPI + MongoDB (Motor)**  
 Frontend: **React (Vite)**
+AI Integraton: **Open AI API** (Deterministic fallback scoring if API key is unavailable)
 
 This project delivers a 1D adaptive diagnostic prototype that selects questions based on an estimated learner level and provides AI-driven feedback when an LLM key is configured.
 
@@ -14,7 +15,9 @@ This project delivers a 1D adaptive diagnostic prototype that selects questions 
   - Baseline starts at **0.5** (stored in session).
   - Next question difficulty shifts based on performance.
 - **AI integration (OpenAI)**: Implemented in `app/services/llm.py`.
-  - If `OPENAI_API_KEY` is missing or quota is exhausted, the app falls back to a deterministic heuristic.
+  - Evaluates answers and generates AI feedback.
+  - If `OPENAI_API_KEY` is missing or quota is exhausted, the system falls back to a deterministic scoring heuristic.
+  - After **10 answered questions**, the system generates a **personalized 3-step study plan**.
 - **Architecture**: Modular FastAPI app with separate `routes/`, `services/`, `schemas/`, and `db/`.
 - **API**: `GET /next-question`, `POST /submit-answer` (plus convenience endpoints `/` and `/health`).
 
@@ -84,6 +87,7 @@ Difficulty update rule (per answer score):
 - If score > 0.7 → move harder
 - If score < 0.4 → move easier
 - Otherwise → keep same difficulty
+After **answered questions**, the backend generates a **personalized study plan** based on the learner’s performance and weak areas.
 
 ## API documentation
 
@@ -122,10 +126,27 @@ update difficulty level → fetch next question → return feedback+score+next q
 
 Response includes:
 
-- `feedback`: string
-- `score`: 0.0–1.0
+- `feedback`: AI-generated explanation
+- `score`: numeric score between 0.0–1.0
 - `next_question`: question object (or null)
-- plus session fields and existing fields
+- `study_plan`: array of recommendations (generated after 10 answers)
+- session metadata
+
+  ## Study Plan Generation
+
+After the learner answers **10 questions**, the backend analyzes the session performance and generates a **personalized 3-step study plan**.
+
+This plan is returned in the `/submit-answer` response when `answered_count >= 10`.
+
+Example:
+
+```json
+"study_plan": [
+  "Review fundamental concepts related to incorrect answers",
+  "Practice medium-difficulty questions to strengthen understanding",
+  "Attempt timed practice tests to improve speed and accuracy"
+]
+
 
 ## Notes on LLM usage
 
@@ -140,7 +161,7 @@ This project implements an adaptive diagnostic test engine:
 - **Adaptive algorithm**: start ability at **0.5**, update by **±0.1**, next question difficulty matches ability
 - **LLM integration**: after **10** answers, generates a **personalized 3-step study plan** (OpenAI if configured; otherwise a deterministic fallback plan)
 
-## Project structure
+## Project Structure
 
 ```
 adaptive-diagnostic-engine/
@@ -241,3 +262,26 @@ Returns:
 - **Question matching**: searches within a difficulty window around current ability and avoids repeats when possible.
 - **LLM fallback**: if `OPENAI_API_KEY` is not set, a heuristic 3-step plan is returned.
 
+## AI Log
+
+During development of this project, AI tools such as Cursor and ChatGPT were used to accelerate implementation and debugging.
+
+### How AI helped
+
+- Assisted in generating the initial **FastAPI project structure** and modular architecture.
+- Helped design the **adaptive diagnostic algorithm logic** for selecting questions based on learner ability.
+- Provided suggestions for **MongoDB schema design** and session tracking.
+- Assisted with **React frontend integration** for displaying questions, feedback, and study plans.
+- Helped debug issues related to:
+  - API responses
+  - frontend state updates
+  - study plan rendering after 10 questions
+- Generated fallback logic when **OpenAI API quota errors occurred**.
+
+### Challenges where manual debugging was required
+
+- Ensuring the **study plan generated in the backend was properly displayed in the frontend UI**.
+- Adjusting the **answer evaluation scoring logic**, as initial implementation returned constant scores.
+- Debugging **session state updates between FastAPI and React**.
+
+AI tools significantly reduced development time by helping with boilerplate code generation and debugging suggestions, while final implementation decisions and integration fixes were handled manually.
